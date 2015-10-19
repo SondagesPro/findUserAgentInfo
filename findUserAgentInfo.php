@@ -20,8 +20,7 @@
  * GNU General Public License for more details.
  *
  * This plugin use :
- * Browser Capabilities PHP Project : Copyright (c) 2007-2010 Jonathan Stoppani <jonathan.stoppani@gmail.com> <https://github.com/browscap/browscap-php> (MIT Licence)
- * Browser Capabilities Project : Copyright (c) 1998-2014 Browser Capabilities Project <http://browscap.org/> (MIT Licence)
+ * Browser.php : Copyright (C) 2008-2010 Chris Schuld  (chris@chrisschuld.com) - (http://chrisschuld.com/)
  */
 class findUserAgentInfo extends PluginBase {
     protected $storage = 'DbStorage';
@@ -47,7 +46,7 @@ class findUserAgentInfo extends PluginBase {
         ),
         'questioncodehelp' => array(
             'type' => 'info',
-            'content' => '<div class="alert alert-info"><p><strong>The question(s) must be a short text question type or a single choice list (DropDown)</strong> (with optionnal other).</p><dl><dt>Short text question is filled with </dt><dd>Browser name - Browser major version</dd><dt>Single choice question try to find label filled with (in order):</dt><dd> <ol><li>Browser_name Browser_major_version</li><li>Browser_name</li></ol>If not found, it fill other text element (if exist)</dd><dt>Browser name</dt><dd>Only browser name are used here, try to find the browser name in the list of answer, put it in other if not found</dd><dt>Browser version (major version)</dt><dd>Browser major version, 0 to 50 can be a good idea</dd></dl><p><strong>Some example</strong></p><ul><li>firefox 19</li><li>ie 6</li><li>ie 11</li><li>opera 5</li><li>midori 0</li><li>chrome 40</li><li>chromium 28</li></ul>The file used is in the plugin directory, name lite_php_browscap.ini, you can update the file at <a href="http://browscap.org/" title="Browser Capabilities Project">browscap.org</a> and have the list of browser and version in the CSV file, no automatic update are provided. The browser name return is in <strong>lowercase</strong>.</div>',
+            'content' => '<div class="alert alert-info"><p><strong>The question(s) must be a short text question type or a single choice list (DropDown)</strong> (with optionnal other).</p><dl><dt>Short text question is filled with </dt><dd>Browser name - Browser major version</dd><dt>Single choice question try to find label filled with (in order):</dt><dd> <ol><li>Browser_name Browser_major_version</li><li>Browser_name</li></ol>If not found, it fill other text element (if exist)</dd><dt>Browser name</dt><dd>Only browser name are used here, try to find the browser name in the list of answer, put it in other if not found</dd><dt>Browser version (major version)</dt><dd>Browser major version, 0 to 50 can be a good idea</dd></dl><p><strong>Some example</strong></p><ul><li>firefox 19</li><li>ie 6</li><li>ie 11</li><li>opera 5</li><li>midori 0</li><li>chrome 40</li><li>chromium 28</li></ul></div>',
         ),
         'questioncodeexample' => array(
             'type' => 'info',
