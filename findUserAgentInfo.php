@@ -13,7 +13,7 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -24,7 +24,7 @@
  */
 class findUserAgentInfo extends PluginBase {
     protected $storage = 'DbStorage';
-    
+
     static protected $description = 'A plugin to find some User agent information.';
     static protected $name = 'Get userAgent information';
 
@@ -46,7 +46,7 @@ class findUserAgentInfo extends PluginBase {
         ),
         'questioncodehelp' => array(
             'type' => 'info',
-            'content' => '<div class="alert alert-info"><p><strong>The question(s) must be a short text question type or a single choice list (DropDown)</strong> (with optionnal other).</p><dl><dt>Short text question is filled with </dt><dd>Browser name - Browser major version</dd><dt>Single choice question try to find label filled with (in order):</dt><dd> <ol><li>Browser_name Browser_major_version</li><li>Browser_name</li></ol>If not found, it fill other text element (if exist)</dd><dt>Browser name</dt><dd>Only browser name are used here, try to find the browser name in the list of answer, put it in other if not found</dd><dt>Browser version (major version)</dt><dd>Browser major version, 0 to 50 can be a good idea</dd></dl><p><strong>Some example</strong></p><ul><li>firefox 19</li><li>ie 6</li><li>ie 11</li><li>opera 5</li><li>midori 0</li><li>chrome 40</li><li>chromium 28</li></ul></div>',
+            'content' => '<div class="alert alert-info"><p><strong>The question(s) must be a short text question type or a single choice list (DropDown)</strong> (with optionnal other).</p><dl><dt>Short text question is filled with </dt><dd>Browser name - Browser major version</dd><dt>Single choice question try to find label filled with (in order):</dt><dd> <ol><li>Browser_name Browser_major_version</li><li>Browser_name</li></ol>If not found, it fill other text element (if exist)</dd><dt>Browser name</dt><dd>Only browser name are used here, try to find the browser name in the list of answer, put it in other if not found</dd><dt>Browser version (major version)</dt><dd>Browser major version, 0 to 50 can be a good idea</dd></dl><p><strong>Some example</strong></p><ul><li>firefox 19</li><li>ie 6</li><li>ie 11</li><li>opera 5</li><li>midori 0</li><li>chrome 40</li><li>chromium 28</li></ul>The file used is in the plugin directory, name lite_php_browscap.ini, you can update the file at <a href="http://browscap.org/" title="Browser Capabilities Project">browscap.org</a> and have the list of browser and version in the CSV file, no automatic update are provided. The browser name return is in <strong>lowercase</strong>.</div>',
         ),
         'questioncodeexample' => array(
             'type' => 'info',
@@ -95,7 +95,7 @@ class findUserAgentInfo extends PluginBase {
     {
         $oEvent=$this->getEvent();
         $iSurveyId=$oEvent->get('surveyId');
-        
+
         $oSurvey=Survey::model()->findByPk($iSurveyId);
         if($oSurvey && $this->get('active', 'Survey', $iSurveyId,1))
         {
@@ -103,57 +103,107 @@ class findUserAgentInfo extends PluginBase {
             $sessionSurvey=Yii::app()->session["survey_{$iSurveyId}"];
             $iSrid=!empty($sessionSurvey['srid']) ? $sessionSurvey['srid'] : null;
             $aUpdatedValue=array();
-            
-            $aUpdatedValue=array_replace($aUpdatedValue,$this->getBrowserCode($iSrid,'browsercode'));
-            $aUpdatedValue=array_replace($aUpdatedValue,$this->getBrowserCode($iSrid,'browsernamecode'));
-            $aUpdatedValue=array_replace($aUpdatedValue,$this->getBrowserCode($iSrid,'browserversioncode'));
+            $sBrowserCode=$this->get('browsercode',null,null,$this->settings['browsercode']['default']);
+            $oQuestionBrowser=Question::model()->find("sid=:sid and title=:title and parent_qid=0",array(':sid'=>$iSurveyId,':title'=>$sBrowserCode));
+            if($oQuestionBrowser && ($oQuestionBrowser->type=='S' or $oQuestionBrowser->type=='L'))
+            {
+                $sQuestionId=$oQuestionBrowser->sid."X".$oQuestionBrowser->gid."X".$oQuestionBrowser->qid;
+                if(empty($sessionSurvey[$sQuestionId]))// Don't replace existing answer , AND do the same at each page.
+                {
+                    if($oQuestionBrowser->type=='S'){
+                        $sessionSurvey[$sQuestionId]=$sessionUserAgent['Browser']." ".$sessionUserAgent['MajorVersion'];
+                    }elseif($oQuestionBrowser->type=='L'){
+                        $oAnswer=Answer::model()->find("qid=:qid and answer=:answer",array(':qid'=>$oQuestionBrowser->qid,':answer'=>$sessionUserAgent['Browser']." ".$sessionUserAgent['MajorVersion']));
+                        if($oAnswer){
+                            $sessionSurvey[$sQuestionId]=$oAnswer->code;
+                        }else{
+                            $oAnswer=Answer::model()->find("qid=:qid and answer=:answer",array(':qid'=>$oQuestionBrowser->qid,':answer'=>$sessionUserAgent['Browser']));
+                            if($oAnswer){
+                                $sessionSurvey[$sQuestionId]=$oAnswer->code;
+                            }elseif($oQuestionBrowser->other=="Y"){
+                                $sessionSurvey[$sQuestionId]="-oth-";
+                                $sessionSurvey[$sQuestionId."other"]=$sessionUserAgent['Browser']." ".$sessionUserAgent['MajorVersion'];
+                            }else{
+                                tracevar("Unable to find the browser in question {$sBrowserCode}.");
+                            }
+                        }
+                    }
+                }
+                if(isset($sessionSurvey[$sQuestionId]))
+                    $this->saveUserAgent($sQuestionId,$sessionSurvey[$sQuestionId]);
+                if(isset($sessionSurvey[$sQuestionId."other"]))
+                    $this->saveUserAgent($sQuestionId."other",$sessionSurvey[$sQuestionId."other"]);
+            }
+
+            $sBrowserNameCode=$this->get('browsernamecode',null,null,$this->settings['browsernamecode']['default']);
+            $oQuestionBrowserName=Question::model()->find("sid=:sid and title=:title and parent_qid=0",array(':sid'=>$iSurveyId,':title'=>$sBrowserNameCode));
+            if($oQuestionBrowserName && ($oQuestionBrowserName->type=='S' or $oQuestionBrowserName->type=='L'))
+            {
+                $sQuestionId=$oQuestionBrowserName->sid."X".$oQuestionBrowserName->gid."X".$oQuestionBrowserName->qid;
+                if(empty($sessionSurvey[$sQuestionId]))// Don't replace existing answer , AND do the same at each page.
+                {
+                    if($oQuestionBrowserName->type=='S'){
+                        $sessionSurvey[$sQuestionId]=$sessionUserAgent['Browser'];
+                    }elseif($oQuestionBrowserName->type=='L'){
+                        $oAnswer=Answer::model()->find("qid=:qid and answer=:answer",array(':qid'=>$oQuestionBrowserName->qid,':answer'=>$sessionUserAgent['Browser']." ".$sessionUserAgent['MajorVersion']));
+                        if($oAnswer){
+                            $sessionSurvey[$sQuestionId]=$oAnswer->code;
+                        }else{
+                            $oAnswer=Answer::model()->find("qid=:qid and answer=:answer",array(':qid'=>$oQuestionBrowserName->qid,':answer'=>$sessionUserAgent['Browser']));
+                            if($oAnswer){
+                                $sessionSurvey[$sQuestionId]=$oAnswer->code;
+                            }elseif($oQuestionBrowserName->other=="Y"){
+                                $sessionSurvey[$sQuestionId]="-oth-";
+                                $sessionSurvey[$sQuestionId."other"]=$sessionUserAgent['Browser'];
+                            }else{
+                                tracevar("Unable to find the browser name in question {$sBrowserNameCode}.");
+                            }
+                        }
+                    }
+                }
+                if(isset($sessionSurvey[$sQuestionId]))
+                    $this->saveUserAgent($sQuestionId,$sessionSurvey[$sQuestionId]);
+                if(isset($sessionSurvey[$sQuestionId."other"]))
+                    $this->saveUserAgent($sQuestionId."other",$sessionSurvey[$sQuestionId."other"]);
+            }
+
+            $sBrowserVersionCode=$this->get('browserversioncode',null,null,$this->settings['browserversioncode']['default']);
+            $oQuestionBrowserVersion=Question::model()->find("sid=:sid and title=:title and parent_qid=0",array(':sid'=>$iSurveyId,':title'=>$sBrowserVersionCode));
+            if($oQuestionBrowserVersion && ($oQuestionBrowserVersion->type=='S' or $oQuestionBrowserVersion->type=='L'))
+            {
+                $sQuestionId=$oQuestionBrowserVersion->sid."X".$oQuestionBrowserVersion->gid."X".$oQuestionBrowserVersion->qid;
+                if(empty($sessionSurvey[$sQuestionId]))// Don't replace existing answer , AND do the same at each page.
+                {
+                    if($oQuestionBrowserVersion->type=='S'){
+                        $sessionSurvey[$sQuestionId]=$sessionUserAgent['Browser'];
+                    }elseif($oQuestionBrowserVersion->type=='L'){
+                        $oAnswer=Answer::model()->find("qid=:qid and answer =:answer",array(':qid'=>$oQuestionBrowserVersion->qid,':answer'=>$sessionUserAgent['MajorVersion']));
+                        if($oAnswer){
+                            $sessionSurvey[$sQuestionId]=$oAnswer->code;
+                        }else{
+                            // Danger : only for mysql
+                            $oAnswer=Answer::model()->find(array('condition'=>"qid=:qid and CAST(answer as UNSIGNED) <= :answer",'order'=> 'CAST(answer as UNSIGNED) desc','params'=>array(':qid'=>$oQuestionBrowserVersion->qid,':answer'=>intval($sessionUserAgent['MajorVersion']))));
+                            if($oAnswer){
+                                $sessionSurvey[$sQuestionId]=$oAnswer->code;
+                            }elseif($oQuestionBrowserVersion->other=="Y"){
+                                $sessionSurvey[$sQuestionId]="-oth-";
+                                $sessionSurvey[$sQuestionId."other"]=$sessionUserAgent['MajorVersion'];
+                            }else{
+                                tracevar("Unable to find the version in question {$sBrowserVersionCode}.");
+                            }
+                        }
+                    }
+                }
+                if(isset($sessionSurvey[$sQuestionId]))
+                    $this->saveUserAgent($sQuestionId,$sessionSurvey[$sQuestionId]);
+                if(isset($sessionSurvey[$sQuestionId."other"]))
+                    $this->saveUserAgent($sQuestionId."other",$sessionSurvey[$sQuestionId."other"]);
+            }
 
             Yii::app()->session["survey_{$iSurveyId}"]=$sessionSurvey;
         }
     }
 
-    /**
-    * get the array of browser code updated
-    * 
-    * return array
-    */
-    private function getBrowserCode($iSurveyId,$sBrowserCode)
-    {
-        
-        $oQuestionBrowser=Question::model()->find("sid=:sid and title=:title and parent_qid=0",array(':sid'=>$iSurveyId,':title'=>$sBrowserCode));
-        $sessionSurvey=Yii::app()->session["survey_{$iSurveyId}"];
-
-        if($oQuestionBrowser && ($oQuestionBrowser->type=='S' or $oQuestionBrowser->type=='L'))
-        {
-            $sQuestionId=$oQuestionBrowser->sid."X".$oQuestionBrowser->gid."X".$oQuestionBrowser->qid;
-            if(empty($sessionSurvey[$sQuestionId]))// Don't replace existing answer , AND do the same at each page.
-            {
-                if($oQuestionBrowser->type=='S'){
-                    $sessionSurvey[$sQuestionId]=$sessionUserAgent['Browser']." ".$sessionUserAgent['MajorVersion'];
-                }elseif($oQuestionBrowser->type=='L'){
-                    $oAnswer=Answer::model()->find("qid=:qid and answer=:answer",array(':qid'=>$oQuestionBrowser->qid,':answer'=>$sessionUserAgent['Browser']." ".$sessionUserAgent['MajorVersion']));
-                    if($oAnswer){
-                        $sessionSurvey[$sQuestionId]=$oAnswer->code;
-                    }else{
-                        $oAnswer=Answer::model()->find("qid=:qid and answer=:answer",array(':qid'=>$oQuestionBrowser->qid,':answer'=>$sessionUserAgent['Browser']));
-                        if($oAnswer){
-                            $sessionSurvey[$sQuestionId]=$oAnswer->code;
-                        }elseif($oQuestionBrowser->other=="Y"){
-                            $sessionSurvey[$sQuestionId]="-oth-";
-                            $sessionSurvey[$sQuestionId."other"]=$sessionUserAgent['Browser']." ".$sessionUserAgent['MajorVersion'];
-                        }else{
-                            tracevar("Unable to find the browser in question {$sBrowserCode}.");
-                        }
-                    }
-                }
-            }
-            if(isset($sessionSurvey[$sQuestionId]))
-                $this->saveUserAgent($sQuestionId,$sessionSurvey[$sQuestionId]);
-            if(isset($sessionSurvey[$sQuestionId."other"]))
-                $this->saveUserAgent($sQuestionId."other",$sessionSurvey[$sQuestionId."other"]);
-        }
-        return array();
-    }
     /**
     * get the array with browser information
     * Using $_SESSION to don't search again and again because the browser can not change during $_SESSION
@@ -196,7 +246,6 @@ class findUserAgentInfo extends PluginBase {
                 {
                     $savedUserAgent=array(
                         'srid'=>$iSrid,
-                        'done'=>array(),
                         'saved'=>array(),
                     );
                 }
@@ -206,8 +255,8 @@ class findUserAgentInfo extends PluginBase {
                 {
                     $oSurvey->$sColumn=$sValue;
                     $oSurvey->save();
-                    $aSavedArray[]=$sColumn;
                 }
+                $aSavedArray[]=$sColumn;
                 $savedUserAgent['saved']=$aSavedArray;
                 Yii::app()->session['savedAgentInfo']=$savedUserAgent;
             }
