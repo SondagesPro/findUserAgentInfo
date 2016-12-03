@@ -3,6 +3,8 @@ findUserAgentInfo
 
 A plugin for LimeSurvey fo fill some questions with browser information
 
+See the plugin in action on [findUserAgentInfo example survey](http://demonstration.sondages.pro/772229)
+
 ## Installation
 
 See [Install and activate a plugin for LimeSurvey](http://extensions.sondages.pro/install-and-activate-a-plugin-for-limesurvey.html)
