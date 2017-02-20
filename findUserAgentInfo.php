@@ -22,7 +22,7 @@
  * This plugin use :
  * Browser.php : Copyright (C) 2008-2010 Chris Schuld  (chris@chrisschuld.com) - (http://chrisschuld.com/)
  */
-class findUserAgentInfo extends PluginBase {
+class findUserAgentInfo extends \ls\pluginmanager\PluginBase {
     protected $storage = 'DbStorage';
 
     static protected $description = 'A plugin to find some User agent information.';
@@ -55,8 +55,7 @@ class findUserAgentInfo extends PluginBase {
         ),
     );
 
-    public function __construct(PluginManager $manager, $id) {
-        parent::__construct($manager, $id);
+    public function init() {
         $this->subscribe('beforeSurveyPage');
 
         $this->subscribe('beforeSurveySettings');
