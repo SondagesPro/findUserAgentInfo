@@ -1,0 +1,15 @@
+{
+    "name": "SondagesPro/findUserAgentInfo",
+    "description": "",
+    "type": "limesurvey-plugin",
+    "homepage": "https://gitlab.com/SondagesPro/QuestionSettingsType/findUserAgentInfo",
+    "license": "AGPL-3.0+",
+    "authors": [
+        {
+            "name": "Denis Chenu",
+            "email": "contact@sondages.pro"
+        }
+    ],
+    "minimum-stability": "beta",
+    "require": {}
+}
