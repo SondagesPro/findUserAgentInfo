@@ -4,7 +4,7 @@
  * Fill an answer with some user agent information
  *
  * @author Denis Chenu <denis@sondages.pro>
- * @copyright 2014-2016 Denis Chenu <http://sondages.pro>
+ * @copyright 2014-2018 Denis Chenu <http://sondages.pro>
  * @copyright 2014 Validators <http://validators.nl>
  * @license AGPL v3
  * @version 3.0.0
@@ -212,9 +212,12 @@ class findUserAgentInfo extends PluginBase {
      * @var string
      * @return string
      */
-    private function gT($string)
+    public function gT($string, $sEscapeMode = 'unescaped', $sLanguage = null)
     {
-        return gT($string,'unescaped');
+        if(Yii::app()->getConfig('versionnumber') >=3) {
+            return parent::gT($string, $sEscapeMode, $sLanguage );
+        }
+        return gT($string,'unescaped', $sLanguage);
     }
 }
 
