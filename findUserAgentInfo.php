@@ -4,10 +4,10 @@
  * Fill an answer with some user agent information
  *
  * @author Denis Chenu <denis@sondages.pro>
- * @copyright 2014-2018 Denis Chenu <http://sondages.pro>
+ * @copyright 2014-2021 Denis Chenu <http://sondages.pro>
  * @copyright 2014 Validators <http://validators.nl>
  * @license AGPL v3
- * @version 3.0.0
+ * @version 4.0.0
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -44,14 +44,34 @@ class findUserAgentInfo extends PluginBase {
             'label' => 'The question code to be filled with browser version.',
             'default' => 'browserversion'
         ),
+        'browserplatform' => array(
+            'type' => 'string',
+            'label' => 'The question code to be filled with browser platform (OS).',
+            'default' => 'browserplatform'
+        ),
+        'browserismobile' => array(
+            'type' => 'string',
+            'label' => 'The question code to be filled with is mobile (Y for mobile else N).',
+            'default' => 'ismobile'
+        ),
+        'browseristablet' => array(
+            'type' => 'string',
+            'label' => 'The question code to be filled with is tablet Y for tablet else N).',
+            'default' => 'istablet'
+        ),
+        'browserisrobot' => array(
+            'type' => 'string',
+            'label' => 'The question code to be filled with is robot Y for robot else N).',
+            'default' => 'isrobot'
+        ),
         'active' => array(
             'type' => 'boolean',
             'label' => 'Use it by default.',
-            'default' => true
+            'default' => 1
         ),
         'questioncodeexample' => array(
             'type' => 'info',
-            'content' => '<div class="alert alert-info">You have an survey exemple file in the plugin directory (limesurvey_survey_browser.lss).</div>',
+            'content' => '<div class="alert alert-info">You have an survey exemple file in the plugin directory (limesurvey_survey_browser.lss). Browser name as thoose </div>',
         ),
     );
 
@@ -60,12 +80,13 @@ class findUserAgentInfo extends PluginBase {
 
         $this->subscribe('beforeSurveySettings');
         $this->subscribe('newSurveySettings');
-
     }
 
     public function beforeSurveySettings()
     {
         $event = $this->event;
+        $default = $this->get('active', null, null, 1);
+        $defaultString = $default ? gt("Yes") : gt("No");
         $event->set("surveysettings.{$this->id}", array(
             'name' => get_class($this),
             'settings' => array(
@@ -77,7 +98,7 @@ class findUserAgentInfo extends PluginBase {
                         '1'=>gt("Yes"),
                     ),
                     'htmlOptions'=>array(
-                        'empty'=>"Use default (".")",
+                        'empty'=> sprintf("Use default (%s)",$defaultString),
                     ),
                     'current' => $this->get('active', 'Survey', $event->get('survey'),null),
                 ),
@@ -87,99 +108,130 @@ class findUserAgentInfo extends PluginBase {
     public function newSurveySettings()
     {
         $event = $this->event;
-        foreach ($event->get('settings') as $name => $value)
-        {
-            /* In order use survey setting, if not set, use global, if not set use default */
-            $default=$event->get($name,null,null,isset($this->settings[$name]['default'])?$this->settings[$name]['default']:NULL);
-            $this->set($name, $value, 'Survey', $event->get('survey'),$default);
+        foreach ($event->get('settings') as $name => $value) {
+            $this->set($name, $value, 'Survey', $event->get('survey'),'');
         }
     }
     public function beforeSurveyPage()
     {
         $oEvent=$this->getEvent();
         $iSurveyId=$oEvent->get('surveyId');
-
         $oSurvey=Survey::model()->findByPk($iSurveyId);
+        if (empty($oSurvey)) {
+            return;
+        }
         $bActive=$this->get('active', 'Survey', $iSurveyId,'');
-        if($bActive===''){
-            $bActive=$this->get('active', null, null,$this->settings['active']['default']);
+        if($bActive === ''){
+            $bActive = $this->get('active', null, null,$this->settings['active']['default']);
         }
-        if($oSurvey && $bActive)
-        {
-            $this->setSessionBrowserCode('browsercode');
-            $this->setSessionBrowserCode('browsernamecode');
-            $this->setSessionBrowserCode('browserversioncode');
+        if (!$bActive) {
+            return;
         }
+        $this->setSurveySessionBrowser($iSurveyId);
+        $this->setSurveySessionBrowser($iSurveyId);
     }
 
     /**
     * get the array of browser code updated
     * @param $iSurveyId : actual survey id
-    * @param $sBrowserCode : actual browser code
     *
     * @return void
     */
-    private function setSessionBrowserCode($sBrowserCode)
+    private function setSurveySessionBrowser($surveyId)
     {
-        $iSurveyId=$this->event->get('surveyId');
-        $sessionSurvey=Yii::app()->session["survey_{$iSurveyId}"];
-        $sessionUserAgent=$this->getSessionUserAgent();
-
-        $sQuestioncode=$this->get($sBrowserCode,null,null,$this->settings[$sBrowserCode]['default']);
-        $oQuestionBrowser=Question::model()->find("sid=:sid and title=:title and parent_qid=0",array(':sid'=>$iSurveyId,':title'=>$sQuestioncode));
-
-        if(!isset($sessionSurvey['startingValues']) && $oQuestionBrowser && ($oQuestionBrowser->type=='S' or $oQuestionBrowser->type=='L'))
-        {
-            $sQuestionId=$oQuestionBrowser->sid."X".$oQuestionBrowser->gid."X".$oQuestionBrowser->qid;
-            if(empty($sessionSurvey[$sQuestionId])){// Don't replace existing answer
-                /* value to set depend on  order of answer */
+        /* before Survey page happen after newtest=Y and SetSurveyLanguage */
+        $sessionSurvey = Yii::app()->session["survey_{$surveyId}"];
+        if (!empty($sessionSurvey['startingValues'])) {
+            /* Already started */
+            return;
+        }
+        $sessionSurvey['startingValues'] = array();
+        /* Check if have one question for this survey */
+        $questionTitles = array_filter(array(
+            'browsercode' => $this->get('browsercode',null,null,$this->settings['browsercode']['default']),
+            'browsernamecode' => $this->get('browsernamecode',null,null,$this->settings['browsernamecode']['default']),
+            'browserversioncode' => $this->get('browserversioncode',null,null,$this->settings['browserversioncode']['default']),
+            'browserismobile' => $this->get('browserismobile',null,null,$this->settings['browserismobile']['default']),
+            'browseristablet' => $this->get('browseristablet',null,null,$this->settings['browseristablet']['default']),
+        ));
+        $criteria = new CDbCriteria;
+        $criteria->compare('sid', $surveyId);
+        $criteria->compare('parent_qid', 0);
+        $criteria->addInCondition('title', $questionTitles);
+        $criteria->addInCondition('type', array('S', 'L'));
+        
+        $oQuestions = Question::model()->findAll($criteria);
+        if (empty($oQuestions)) {
+            return;
+        }
+        $sessionUserAgent = $this->getSessionUserAgent();
+        foreach($oQuestions as $oQuestion) {
+            $sQuestionSGQ = $oQuestion->sid . "X" . $oQuestion->gid . "X".$oQuestion->qid;
+            $sBrowserCode = array_search($oQuestion->title, $questionTitles);
+            switch ($sBrowserCode){
+                case 'browsernamecode':
+                    $completeValue = $sessionUserAgent['Browser'];
+                    break;
+                case 'browserversioncode':
+                    $completeValue = $sessionUserAgent['MajorVersion'];
+                    break;
+                case 'browserismobile':
+                    $completeValue = $sessionUserAgent['isMobile'];
+                    break;
+                case 'browseristablet':
+                    $completeValue = $sessionUserAgent['isTablet'];
+                    break;
+                case 'browserisrobot':
+                    $completeValue = $sessionUserAgent['isRobot'];
+                    break;
+                case 'browsercode':
+                default:
+                    $completeValue = $sessionUserAgent['Browser']." ".$sessionUserAgent['MajorVersion'];
+                    break;
+            }
+            if($oQuestion->type == 'S'){
+                $sessionSurvey['startingValues'][$sQuestionSGQ] = $completeValue;
+                $sessionSurvey[$sQuestionSGQ] = $completeValue;
+            }
+            if($oQuestion->type == 'L'){
                 switch ($sBrowserCode){
                     case 'browsernamecode':
-                        $completeValue=$sessionUserAgent['Browser'];
+                    case 'browserismobile':
+                    case 'browseristablet':
+                    case 'browserisrobot':
+                        $oAnswer = Answer::model()->find("qid=:qid and answer=:answer",array(':qid'=>$oQuestion->qid,':answer'=>$completeValue));
                         break;
                     case 'browserversioncode':
-                        $completeValue=$sessionUserAgent['MajorVersion'];
+                        $oAnswer = Answer::model()->find(array(
+                            'condition'=>"qid=:qid and answer<=:answer",
+                            'order'=>"cast(answer as unsigned) desc", /* Same for all SQL ?*/
+                            'params'=>array(':qid'=>$oQuestion->qid,':answer'=>$completeValue)
+                            ));
                         break;
                     case 'browsercode':
                     default:
-                        $completeValue=$sessionUserAgent['Browser']." ".$sessionUserAgent['MajorVersion'];
+                        $oAnswer = Answer::model()->find("qid=:qid and answer=:answer",array(':qid'=>$oQuestion->qid,':answer'=>$completeValue));
+                        if (!$oAnswer){
+                            $oAnswer = Answer::model()->find("qid=:qid and answer=:answer",array(':qid'=>$oQuestion->qid,':answer'=>$sessionUserAgent['Browser']));
+                        }
                         break;
                 }
-                if($oQuestionBrowser->type=='S'){
-                    $_GET[$sQuestionId]=$completeValue;
-                }elseif($oQuestionBrowser->type=='L'){
-                    /* search order of answer */
-                    switch ($sBrowserCode){
-                        case 'browsernamecode':
-                            $oAnswer=Answer::model()->find("qid=:qid and answer=:answer",array(':qid'=>$oQuestionBrowser->qid,':answer'=>$completeValue));
-                            break;
-                        case 'browserversioncode':
-                            $oAnswer=Answer::model()->find(array(
-                                'condition'=>"qid=:qid and answer<=:answer",
-                                'order'=>"cast(answer as unsigned) desc", /* Same for all SQL ?*/
-                                'params'=>array(':qid'=>$oQuestionBrowser->qid,':answer'=>$completeValue)
-                                ));
-                            break;
-                        case 'browsercode':
-                        default:
-                            $oAnswer=Answer::model()->find("qid=:qid and answer=:answer",array(':qid'=>$oQuestionBrowser->qid,':answer'=>$completeValue));
-                            if(!$oAnswer){
-                                $oAnswer=Answer::model()->find("qid=:qid and answer=:answer",array(':qid'=>$oQuestionBrowser->qid,':answer'=>$sessionUserAgent['Browser']));
-                            }
-                            break;
-                    }
-                    if($oAnswer){
-                        $_GET[$sQuestionId]=$oAnswer->code;
-                    }elseif($oQuestionBrowser->other=="Y"){
-                            $_GET[$sQuestionId]="-oth-";
-                            $_GET[$sQuestionId."other"]=$completeValue;
-                    }else{
-                        Yii::log("Browser {$sBrowserCode} ({$completeValue} not found in answers",'warning','application.plugins.findUserAgentInfo');
-                    }
+                if($oAnswer) {
+                    $sessionSurvey['startingValues'][$sQuestionSGQ] = $oAnswer->code;
+                    $sessionSurvey[$sQuestionSGQ] = $oAnswer->code;
+                } elseif($oQuestion->other == "Y") {
+                    $sessionSurvey['startingValues'][$sQuestionSGQ] = "-oth-";
+                    $sessionSurvey[$sQuestionSGQ] = "-oth-";
+                    $sessionSurvey['startingValues']["{$sQuestionSGQ}other"] = $completeValue;
+                    $sessionSurvey["{$sQuestionSGQ}other"] = $completeValue;
+                } else {
+                    $this->log("Browser {$sBrowserCode} : {$completeValue} not found in answers",'warning');
                 }
             }
         }
+        Yii::app()->session["survey_{$surveyId}"] = $sessionSurvey;
     }
+
     /**
     * get the array with browser information
     * Using $_SESSION to don't search again and again because the browser can not change during $_SESSION
@@ -189,21 +241,20 @@ class findUserAgentInfo extends PluginBase {
     private function getSessionUserAgent()
     {
         $sessionUserAgent = Yii::app()->session['UserAgentInfo'];
-        if(empty($sessionUserAgent['Browser']))
-        {
+        if(empty($sessionUserAgent['Browser'])) {
             $basedir=dirname(__FILE__); // this will give you the / directory
             Yii::setPathOfAlias('finduseragentinfo', $basedir);
-            Yii::import('finduseragentinfo.Browser.lib.Browser');
+            Yii::import('finduseragentinfo.Browser.Browser');
             $browser=new Browser();
-            $sessionUserAgent['Platform']=$browser->getPlatform();
-            $sessionUserAgent['Browser']=$browser->getBrowser();
-            $sessionUserAgent['Version']=$browser->getVersion();
-            $sessionUserAgent['MajorVersion']=intval($browser->getVersion());
-            /* Future developpement : fill a mobile/tablet YES/NO question */
-            $sessionUserAgent['isMobileDevice']=$browser->isMobile();
-            $sessionUserAgent['isTablet']=$browser->isTablet();
+            $sessionUserAgent['Platform'] = $browser->getPlatform();
+            $sessionUserAgent['Browser'] = $browser->getBrowser();
+            $sessionUserAgent['Version'] = $browser->getVersion();
+            $sessionUserAgent['MajorVersion'] = intval($browser->getVersion());
+            $sessionUserAgent['isMobile'] = $browser->isMobile() ? "Y" : "N";
+            $sessionUserAgent['isTablet'] = $browser->isTablet() ? "Y" : "N";
+            $sessionUserAgent['isRobot'] = $browser->isRobot() ? "Y" : "N";
         }
-        Yii::app()->session['UserAgentInfo']=$sessionUserAgent;
+        Yii::app()->session['UserAgentInfo'] = $sessionUserAgent;
         return $sessionUserAgent;
     }
 

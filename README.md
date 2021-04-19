@@ -3,7 +3,7 @@ findUserAgentInfo
 
 A plugin for LimeSurvey fo fill some questions with browser information
 
-See the plugin in action on [findUserAgentInfo example survey](http://demonstration.sondages.pro/772229)
+See the plugin in action on [findUserAgentInfo example survey](https://demo.sondages.pro/772229)
 
 ## Installation
 
@@ -20,7 +20,7 @@ See [Install and activate a plugin for LimeSurvey](http://extensions.sondages.pr
 
 ## Home page & Copyright
 - HomePage <http://extension.sondages.pro/>
-- Copyright © 2014-2016 Denis Chenu <http://sondages.pro>
+- Copyright © 2014-2021 Denis Chenu <http://sondages.pro>
 - Copyright © 2014 Validators <http://validators.nl>
 - Browser.php is © Chris Schuld (http://chrisschuld.com/), distributed under [MIT](https://github.com/cbschuld/Browser.php/blob/master/LICENSE.md)
 
