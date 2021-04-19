@@ -7,7 +7,7 @@
  * @copyright 2014-2021 Denis Chenu <http://sondages.pro>
  * @copyright 2014 Validators <http://validators.nl>
  * @license AGPL v3
- * @version 4.0.0
+ * @version 4.0.1
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -41,7 +41,7 @@ class findUserAgentInfo extends PluginBase {
         ),
         'browserversioncode' => array(
             'type' => 'string',
-            'label' => 'The question code to be filled with browser version.',
+            'label' => 'The question code to be filled with browser major version (integer value).',
             'default' => 'browserversion'
         ),
         'browserplatform' => array(
@@ -52,17 +52,17 @@ class findUserAgentInfo extends PluginBase {
         'browserismobile' => array(
             'type' => 'string',
             'label' => 'The question code to be filled with is mobile (Y for mobile else N).',
-            'default' => 'ismobile'
+            'default' => 'browserismobile'
         ),
         'browseristablet' => array(
             'type' => 'string',
-            'label' => 'The question code to be filled with is tablet Y for tablet else N).',
-            'default' => 'istablet'
+            'label' => 'The question code to be filled with is tablet (Y for tablet else N).',
+            'default' => 'browseristablet'
         ),
         'browserisrobot' => array(
             'type' => 'string',
-            'label' => 'The question code to be filled with is robot Y for robot else N).',
-            'default' => 'isrobot'
+            'label' => 'The question code to be filled with is robot (Y for robot else N).',
+            'default' => 'browserisrobot'
         ),
         'active' => array(
             'type' => 'boolean',
@@ -71,7 +71,10 @@ class findUserAgentInfo extends PluginBase {
         ),
         'questioncodeexample' => array(
             'type' => 'info',
-            'content' => '<div class="alert alert-info">You have an survey exemple file in the plugin directory (limesurvey_survey_browser.lss). Browser name as thoose </div>',
+            'content' => '<div class="alert alert-info">'
+                        . '<p>You have an survey exemple file in the plugin directory (limesurvey_survey_browser.lss).</p>'
+                        . '<p>TYou can find all code used <a href="https://gitlab.com/SondagesPro/QuestionSettingsType/findUserAgentInfo/-/blob/master/Browser/Browser.php#L56">in Browser.php</a> </p>'
+                        . '</div>',
         ),
     );
 
@@ -151,8 +154,10 @@ class findUserAgentInfo extends PluginBase {
             'browsercode' => $this->get('browsercode',null,null,$this->settings['browsercode']['default']),
             'browsernamecode' => $this->get('browsernamecode',null,null,$this->settings['browsernamecode']['default']),
             'browserversioncode' => $this->get('browserversioncode',null,null,$this->settings['browserversioncode']['default']),
+            'browserplatform' => $this->get('browserplatform',null,null,$this->settings['browserplatform']['default']),
             'browserismobile' => $this->get('browserismobile',null,null,$this->settings['browserismobile']['default']),
             'browseristablet' => $this->get('browseristablet',null,null,$this->settings['browseristablet']['default']),
+            'browserisrobot' => $this->get('browserisrobot',null,null,$this->settings['browserisrobot']['default']),
         ));
         $criteria = new CDbCriteria;
         $criteria->compare('sid', $surveyId);
@@ -175,6 +180,9 @@ class findUserAgentInfo extends PluginBase {
                 case 'browserversioncode':
                     $completeValue = $sessionUserAgent['MajorVersion'];
                     break;
+                case 'browserplatform':
+                    $completeValue = $sessionUserAgent['Platform'];
+                    break;
                 case 'browserismobile':
                     $completeValue = $sessionUserAgent['isMobile'];
                     break;
@@ -196,6 +204,7 @@ class findUserAgentInfo extends PluginBase {
             if($oQuestion->type == 'L'){
                 switch ($sBrowserCode){
                     case 'browsernamecode':
+                    case 'browserplatform':
                     case 'browserismobile':
                     case 'browseristablet':
                     case 'browserisrobot':
