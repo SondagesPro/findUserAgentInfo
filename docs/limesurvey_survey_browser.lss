@@ -1432,7 +1432,7 @@
    <row>
     <qid><![CDATA[15326]]></qid>
     <code><![CDATA[Y]]></code>
-    <answer><![CDATA[Yes]]></answer>
+    <answer><![CDATA[Y]]></answer>
     <sortorder><![CDATA[1]]></sortorder>
     <assessment_value><![CDATA[0]]></assessment_value>
     <language><![CDATA[en]]></language>
@@ -1441,7 +1441,7 @@
    <row>
     <qid><![CDATA[15326]]></qid>
     <code><![CDATA[N]]></code>
-    <answer><![CDATA[No]]></answer>
+    <answer><![CDATA[N]]></answer>
     <sortorder><![CDATA[2]]></sortorder>
     <assessment_value><![CDATA[0]]></assessment_value>
     <language><![CDATA[en]]></language>
@@ -1450,7 +1450,7 @@
    <row>
     <qid><![CDATA[15327]]></qid>
     <code><![CDATA[N]]></code>
-    <answer><![CDATA[No]]></answer>
+    <answer><![CDATA[N]]></answer>
     <sortorder><![CDATA[2]]></sortorder>
     <assessment_value><![CDATA[0]]></assessment_value>
     <language><![CDATA[en]]></language>
@@ -1459,7 +1459,7 @@
    <row>
     <qid><![CDATA[15327]]></qid>
     <code><![CDATA[Y]]></code>
-    <answer><![CDATA[Yes]]></answer>
+    <answer><![CDATA[Y]]></answer>
     <sortorder><![CDATA[1]]></sortorder>
     <assessment_value><![CDATA[0]]></assessment_value>
     <language><![CDATA[en]]></language>
@@ -1468,7 +1468,7 @@
    <row>
     <qid><![CDATA[15328]]></qid>
     <code><![CDATA[N]]></code>
-    <answer><![CDATA[No]]></answer>
+    <answer><![CDATA[N]]></answer>
     <sortorder><![CDATA[2]]></sortorder>
     <assessment_value><![CDATA[0]]></assessment_value>
     <language><![CDATA[en]]></language>
@@ -1477,7 +1477,7 @@
    <row>
     <qid><![CDATA[15328]]></qid>
     <code><![CDATA[Y]]></code>
-    <answer><![CDATA[Yes]]></answer>
+    <answer><![CDATA[Y]]></answer>
     <sortorder><![CDATA[1]]></sortorder>
     <assessment_value><![CDATA[0]]></assessment_value>
     <language><![CDATA[en]]></language>
