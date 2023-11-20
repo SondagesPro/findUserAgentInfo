@@ -20,21 +20,22 @@ See [Install and activate a plugin for LimeSurvey](http://extensions.sondages.pr
 
 ## Usage
 
-The plugin use one question for each browser information, this question can be a short text question or a single choice question (drop down).
+The plugin use one question for each browser information, this question can be a short text question or a single choice question (drop down). 
+The plugin use question title (not attribute) for browser information, you can choose the code at global settings, and activate the plugin by default.
 
-With a short text question : you get the value set by Browser.php in the yext directly. For boolean value : you get Y or N.
+With a short text question : you get the value set by Browser.php in the text directly. For boolean value : you get Y or N.
 
-With a drop down question : if the value is set by answer text : this value is selected. If not and question allow other : the value is set as other.
+With a drop down question : if the value is set by answer text : this value is selected. If value are not found and question allow other : the value is set as other.
 
-For mobile, tablet and robot : value are Y or N.
+For mobile, tablet and robot : value are Y or N, in answer code (by default) or in answer text.
 
-For version number : the value selected is the maximum near your current value. For example : if you have 1 to 10 value and use DFoirefox 93 : 10 is selected.
+For version number : the value selected is the maximum near your current value. For example : if you have 1 to 10 value and use Firefox 93 : 10 is selected.
 
 For browser and platform : you find 2 TSV file in docs from Browser 1.9.6. The answer text are set in [Browser.php](https://gitlab.com/SondagesPro/QuestionSettingsType/findUserAgentInfo/-/blob/master/Browser/Browser.php#L56).
 
 ## Home page & Copyright
 - HomePage <http://extension.sondages.pro/>
-- Copyright © 2014-2021 Denis Chenu <http://sondages.pro>
+- Copyright © 2014-2023 Denis Chenu <http://sondages.pro>
 - Copyright © 2014 Validators <http://validators.nl>
 - Browser.php is © Chris Schuld (http://chrisschuld.com/), distributed under [MIT](https://github.com/cbschuld/Browser.php/blob/master/LICENSE.md)
 
